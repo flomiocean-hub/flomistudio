@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLOMI — Follow the Ocean</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Noto+Serif+TC:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink: #0a1419;
+  --deep: #0e1d28;
+  --sea: #1a3a52;
+  --tide: #2d5878;
+  --stone: #565a5d;
+  --sand: #e8e2d4;
+  --paper: #f1ece0;
+  --foam: #faf7ef;
+  --salt: #d4cdb8;
+  --accent: #c4633a;
+  --line: rgba(10,20,25,0.12);
+  --grain-opacity: 0.04;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background: var(--foam);
+  color: var(--ink);
+  font-family: 'Noto Serif TC', 'Fraunces', serif;
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Film grain overlay */
+body::before{
+  content:'';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+::selection{background: var(--ink); color: var(--foam);}
+
+/* ====== NAV ====== */
+nav{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 24px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  mix-blend-mode: difference;
+  color: #fff;
+}
+.logo{
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  font-style: italic;
+}
+.logo span{font-style: normal; font-weight: 500;}
+.nav-links{
+  display: flex;
+  gap: 36px;
+  list-style: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.nav-links a{
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+  padding: 4px 0;
+}
+.nav-links a::after{
+  content:'';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.5s cubic-bezier(.7,0,.3,1);
+}
+.nav-links a:hover::after{transform: scaleX(1); transform-origin: left;}
+
+/* ====== HERO ====== */
+.hero{
+  min-height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 30% 80%, rgba(26,58,82,0.5) 0%, transparent 50%),
+    linear-gradient(180deg, #0a1419 0%, #0e1d28 40%, #1a3a52 100%);
+  color: #f1ece0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 48px 80px;
+}
+
+/* Animated wave SVG */
+.hero-waves{
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.hero-waves svg{width: 100%; height: 100%;}
+.wave-path{
+  stroke: rgba(232,226,212,0.4);
+  fill: none;
+  stroke-width: 1;
+  animation: wave-drift 20s ease-in-out infinite;
+}
+.wave-path:nth-child(2){animation-delay: -5s; opacity: 0.6;}
+.wave-path:nth-child(3){animation-delay: -10s; opacity: 0.4;}
+
+@keyframes wave-drift{
+  0%,100%{transform: translateY(0px);}
+  50%{transform: translateY(-20px);}
+}
+
+/* Floating coordinates */
+.hero-coords{
+  position: absolute;
+  top: 50%;
+  right: 48px;
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: right center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: rgba(232,226,212,0.5);
+  text-transform: uppercase;
+}
+
+.hero-content{
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.hero-meta{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 60px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(232,226,212,0.6);
+}
+
+.hero-title{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(64px, 13vw, 220px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  margin-bottom: 40px;
+}
+.hero-title .line{display: block; overflow: hidden;}
+.hero-title .line span{
+  display: inline-block;
+  animation: rise 1.4s cubic-bezier(.16,.84,.4,1) both;
+}
+.hero-title .line:nth-child(1) span{animation-delay: 0.2s;}
+.hero-title .line:nth-child(2) span{animation-delay: 0.4s;}
+.hero-title .line:nth-child(3) span{animation-delay: 0.6s;}
+
+@keyframes rise{
+  from{transform: translateY(110%);}
+  to{transform: translateY(0);}
+}
+
+.hero-title em{
+  font-style: italic;
+  font-weight: 300;
+  color: var(--salt);
+}
+
+.hero-bottom{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: end;
+  margin-top: 80px;
+}
+
+.hero-tag{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  max-width: 380px;
+  color: var(--salt);
+  line-height: 1.5;
+  animation: fade-up 1.4s ease 1s both;
+}
+
+.scroll-cue{
+  justify-self: end;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(232,226,212,0.6);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fade-up 1.4s ease 1.2s both;
+}
+.scroll-cue::after{
+  content:'';
+  width: 60px;
+  height: 1px;
+  background: currentColor;
+  animation: line-pulse 2s ease-in-out infinite;
+}
+@keyframes line-pulse{
+  0%,100%{transform: scaleX(1); opacity: 0.6;}
+  50%{transform: scaleX(1.3); opacity: 1;}
+}
+@keyframes fade-up{
+  from{opacity:0; transform: translateY(20px);}
+  to{opacity:1; transform: translateY(0);}
+}
+
+/* ====== MANIFESTO ====== */
+.manifesto{
+  padding: 180px 48px 160px;
+  background: var(--foam);
+  position: relative;
+}
+.manifesto-grid{
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 100px;
+  align-items: start;
+}
+.section-label{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--stone);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.section-label::before{
+  content:'';
+  width: 32px;
+  height: 1px;
+  background: var(--stone);
+}
+.section-num{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+.manifesto-text{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(28px, 3.4vw, 52px);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.manifesto-text em{
+  font-style: italic;
+  color: var(--sea);
+}
+.manifesto-text .highlight{
+  background: linear-gradient(180deg, transparent 60%, rgba(196,99,58,0.18) 60%);
+  padding: 0 4px;
+}
+.manifesto-foot{
+  margin-top: 60px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
+
+/* ====== VALUES ====== */
+.values{
+  background: var(--paper);
+  padding: 160px 48px;
+  position: relative;
+}
+.values-header{
+  max-width: 1400px;
+  margin: 0 auto 100px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+.values-header h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(48px, 6vw, 96px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.values-header h2 em{font-style: italic; color: var(--tide);}
+
+.values-grid{
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+.value-card{
+  background: var(--paper);
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 320px;
+  transition: background 0.5s ease;
+  position: relative;
+}
+.value-card:hover{background: var(--foam);}
+.value-num{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--stone);
+}
+.value-en{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--sea);
+}
+.value-zh{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--stone);
+  margin-top: auto;
+  line-height: 1.7;
+}
+
+/* ====== SERVICES ====== */
+.services{
+  background: var(--deep);
+  color: var(--foam);
+  padding: 180px 0 100px;
+  position: relative;
+  overflow: hidden;
+}
+.services::before{
+  content:'';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: rgba(241,236,224,0.1);
+}
+.services-header{
+  max-width: 1400px;
+  margin: 0 auto 120px;
+  padding: 0 48px;
+}
+.services-header .section-label{color: rgba(241,236,224,0.5);}
+.services-header .section-label::before{background: rgba(241,236,224,0.3);}
+.services-header h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(56px, 8vw, 130px);
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  max-width: 1000px;
+}
+.services-header h2 em{font-style: italic; color: var(--salt);}
+
+.service-row{
+  border-top: 1px solid rgba(241,236,224,0.12);
+  padding: 60px 48px;
+  display: grid;
+  grid-template-columns: 80px 280px 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+  max-width: 1600px;
+  margin: 0 auto;
+  transition: padding 0.6s ease, background 0.6s ease;
+  cursor: pointer;
+  position: relative;
+}
+.service-row:last-of-type{border-bottom: 1px solid rgba(241,236,224,0.12);}
+.service-row:hover{
+  background: rgba(26,58,82,0.4);
+  padding-left: 72px;
+}
+.service-num{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 36px;
+  color: var(--salt);
+}
+.service-title{
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.service-title-zh{
+  font-family: 'Noto Serif TC', serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: rgba(241,236,224,0.6);
+  margin-top: 12px;
+}
+.service-desc{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.8;
+  color: rgba(241,236,224,0.8);
+  max-width: 380px;
+}
+.service-tags{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: start;
+}
+.service-tag{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid rgba(241,236,224,0.2);
+  color: rgba(241,236,224,0.7);
+  border-radius: 100px;
+}
+
+/* ====== JOURNAL ====== */
+.journal{
+  background: var(--foam);
+  padding: 180px 48px;
+}
+.journal-header{
+  max-width: 1400px;
+  margin: 0 auto 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: end;
+}
+.journal-header h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(56px, 7vw, 110px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.journal-header h2 em{font-style: italic; color: var(--tide);}
+.journal-header p{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--stone);
+  max-width: 460px;
+}
+
+.journal-grid{
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 5fr 4fr 3fr;
+  gap: 32px;
+}
+
+.article{
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+}
+.article-img{
+  width: 100%;
+  aspect-ratio: 4/5;
+  overflow: hidden;
+  position: relative;
+  background: var(--sea);
+  border-radius: 2px;
+}
+.article:nth-child(2) .article-img{aspect-ratio: 3/4;}
+.article:nth-child(3) .article-img{aspect-ratio: 3/4; margin-top: 80px;}
+
+.article-img svg{width: 100%; height: 100%; display: block; transition: transform 1s cubic-bezier(.2,.8,.2,1);}
+.article:hover .article-img svg{transform: scale(1.04);}
+
+.article-meta{
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stone);
+  padding-top: 4px;
+}
+.article-title{
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.article-title em{font-style: italic; color: var(--sea);}
+.article-excerpt{
+  font-family: 'Noto Serif TC', serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--stone);
+  font-weight: 300;
+}
+
+/* ====== PARTNERS ====== */
+.partners{
+  background: var(--ink);
+  color: var(--foam);
+  padding: 160px 0;
+  overflow: hidden;
+  position: relative;
+}
+.partners-inner{
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 48px 80px;
+}
+.partners h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(56px, 7vw, 110px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-top: 24px;
+  max-width: 1100px;
+}
+.partners h2 em{font-style: italic; color: var(--salt);}
+.partners .section-label{color: rgba(241,236,224,0.5);}
+.partners .section-label::before{background: rgba(241,236,224,0.3);}
+
+.marquee{
+  margin-top: 60px;
+  overflow: hidden;
+  border-top: 1px solid rgba(241,236,224,0.12);
+  border-bottom: 1px solid rgba(241,236,224,0.12);
+  padding: 32px 0;
+}
+.marquee-track{
+  display: flex;
+  gap: 80px;
+  animation: marquee 40s linear infinite;
+  white-space: nowrap;
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: 38px;
+  color: var(--salt);
+}
+.marquee-track span{display: flex; align-items: center; gap: 80px;}
+.marquee-track span::after{
+  content:'✦';
+  font-style: normal;
+  color: rgba(241,236,224,0.3);
+  font-size: 20px;
+}
+@keyframes marquee{
+  from{transform: translateX(0);}
+  to{transform: translateX(-50%);}
+}
+
+.partners-categories{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(241,236,224,0.12);
+  margin-top: 80px;
+}
+.partner-cat{
+  background: var(--ink);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.partner-cat-num{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: rgba(241,236,224,0.4);
+}
+.partner-cat-name{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--foam);
+}
+.partner-cat-zh{
+  font-family: 'Noto Serif TC', serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(241,236,224,0.55);
+  font-weight: 300;
+}
+
+/* ====== STATS ====== */
+.stats{
+  background: var(--paper);
+  padding: 140px 48px;
+}
+.stats-inner{
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.stats-label{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-bottom: 60px;
+  text-align: center;
+}
+.stats-grid{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.stat{
+  text-align: center;
+  padding: 40px 20px;
+  border-right: 1px solid var(--line);
+}
+.stat:last-child{border-right: none;}
+.stat-num{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(60px, 9vw, 140px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.stat-num em{font-style: italic; color: var(--accent);}
+.stat-num sup{
+  font-size: 0.4em;
+  font-style: italic;
+  color: var(--stone);
+  vertical-align: super;
+  font-weight: 400;
+}
+.stat-label{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--stone);
+  margin-top: 16px;
+}
+
+/* ====== ROADMAP ====== */
+.roadmap{
+  background: var(--foam);
+  padding: 180px 48px;
+  position: relative;
+}
+.roadmap-inner{
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.roadmap-header{
+  margin-bottom: 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: end;
+}
+.roadmap-header h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(56px, 7vw, 110px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.roadmap-header h2 em{font-style: italic; color: var(--tide);}
+
+.phases{
+  position: relative;
+}
+.phases::before{
+  content:'';
+  position: absolute;
+  left: 0; right: 0;
+  top: 28px;
+  height: 1px;
+  background: var(--line);
+}
+.phases-grid{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  position: relative;
+}
+.phase{
+  position: relative;
+  padding-top: 60px;
+}
+.phase::before{
+  content:'';
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  background: var(--tide);
+  border-radius: 50%;
+}
+.phase:first-child::before{background: var(--accent);}
+.phase-tag{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--stone);
+  margin-bottom: 14px;
+}
+.phase-num{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--sea);
+  margin-bottom: 20px;
+}
+.phase-title{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+.phase-desc{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--stone);
+  margin-top: 12px;
+}
+
+/* ====== CTA ====== */
+.cta{
+  background: linear-gradient(180deg, var(--sea) 0%, var(--deep) 100%);
+  color: var(--foam);
+  padding: 180px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta::before{
+  content:'';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(196,99,58,0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(45,88,120,0.4) 0%, transparent 50%);
+  pointer-events: none;
+}
+.cta-inner{position: relative; z-index: 2; max-width: 1100px; margin: 0 auto;}
+.cta .section-label{
+  color: rgba(241,236,224,0.55);
+  justify-content: center;
+}
+.cta .section-label::before{background: rgba(241,236,224,0.3);}
+.cta h2{
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(56px, 9vw, 150px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin: 24px 0 48px;
+}
+.cta h2 .non-italic{font-style: normal; color: var(--salt);}
+.cta p{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.8;
+  color: rgba(241,236,224,0.85);
+  max-width: 600px;
+  margin: 0 auto 60px;
+}
+.cta-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--foam);
+  text-decoration: none;
+  border: 1px solid var(--foam);
+  padding: 22px 40px;
+  border-radius: 100px;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.cta-btn::before{
+  content:'';
+  position: absolute;
+  inset: 0;
+  background: var(--foam);
+  transform: translateX(-101%);
+  transition: transform 0.5s cubic-bezier(.7,0,.3,1);
+}
+.cta-btn span{position: relative; z-index: 2; transition: color 0.4s ease;}
+.cta-btn:hover::before{transform: translateX(0);}
+.cta-btn:hover span{color: var(--ink);}
+.cta-btn::after{
+  content:'→';
+  position: relative;
+  z-index: 2;
+  transition: color 0.4s ease, transform 0.4s ease;
+}
+.cta-btn:hover::after{color: var(--ink); transform: translateX(4px);}
+
+/* ====== FOOTER ====== */
+footer{
+  background: var(--ink);
+  color: var(--foam);
+  padding: 80px 48px 40px;
+}
+.footer-inner{
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 60px;
+  padding-bottom: 60px;
+  border-bottom: 1px solid rgba(241,236,224,0.12);
+}
+.footer-brand .logo{font-size: 28px; margin-bottom: 20px; display: block;}
+.footer-brand p{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 16px;
+  color: rgba(241,236,224,0.65);
+  max-width: 320px;
+  line-height: 1.6;
+}
+.footer-col h4{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(241,236,224,0.5);
+  font-weight: 400;
+  margin-bottom: 24px;
+}
+.footer-col ul{list-style: none;}
+.footer-col li{
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: 14px;
+  padding: 6px 0;
+}
+.footer-col a{
+  color: var(--foam);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+.footer-col a:hover{color: var(--salt);}
+.footer-bottom{
+  max-width: 1400px;
+  margin: 40px auto 0;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(241,236,224,0.4);
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 900px){
+  nav{padding: 20px 24px;}
+  .nav-links{display: none;}
+  .hero{padding: 0 24px 60px;}
+  .hero-coords{display: none;}
+  .hero-bottom{grid-template-columns: 1fr;}
+  .manifesto, .values, .journal, .roadmap, .cta{padding-left: 24px; padding-right: 24px;}
+  .manifesto-grid{grid-template-columns: 1fr; gap: 40px;}
+  .values-grid{grid-template-columns: repeat(2, 1fr);}
+  .services-header{padding: 0 24px;}
+  .service-row{padding: 32px 24px; grid-template-columns: 1fr; gap: 16px;}
+  .service-row:hover{padding-left: 32px;}
+  .journal-header{grid-template-columns: 1fr;}
+  .journal-grid{grid-template-columns: 1fr;}
+  .article:nth-child(3) .article-img{margin-top: 0;}
+  .partners-inner{padding: 0 24px 60px;}
+  .partners-categories{grid-template-columns: repeat(2, 1fr);}
+  .stats-grid{grid-template-columns: repeat(2, 1fr);}
+  .stat:nth-child(2){border-right: none;}
+  .phases-grid{grid-template-columns: 1fr; gap: 40px;}
+  .phases::before{display: none;}
+  .footer-inner{grid-template-columns: 1fr 1fr; gap: 40px;}
+  .footer-bottom{flex-direction: column; gap: 12px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span>FL</span>OMI<span>.</span></div>
+  <ul class="nav-links">
+    <li><a href="#partners">Partners</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#studio">Studio</a></li>
+    <li><a href="#journal">Journal</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-waves">
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="none">
+      <path class="wave-path" d="M0,400 Q400,350 800,400 T1600,400" />
+      <path class="wave-path" d="M0,500 Q400,460 800,500 T1600,500" />
+      <path class="wave-path" d="M0,600 Q400,560 800,600 T1600,600" />
+      <path class="wave-path" d="M0,700 Q400,660 800,700 T1600,700" />
+      <path class="wave-path" d="M0,800 Q400,760 800,800 T1600,800" />
+    </svg>
+  </div>
+  <div class="hero-coords">N 24°47′ — E 121°45′ — TAIWAN COAST</div>
+
+  <div class="hero-content">
+    <div class="hero-meta">
+      <span>Est. 2024 · Taiwan</span>
+      <span>Vol. 01 / Coastal Lifestyle Platform</span>
+    </div>
+
+    <h1 class="hero-title">
+      <span class="line"><span>Follow me,</span></span>
+      <span class="line"><span><em>follow</em> the</span></span>
+      <span class="line"><span>ocean.</span></span>
+    </h1>
+
+    <div class="hero-bottom">
+      <p class="hero-tag">
+        我們不再只是販售海上活動，而是一個串聯台灣海岸生活、友善空間、地方創作者與海洋文化的品牌平台。
+      </p>
+      <div class="scroll-cue">Scroll to explore</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MANIFESTO ===== -->
+<section class="manifesto">
+  <div class="manifesto-grid">
+    <div>
+      <div class="section-label"><span class="section-num">01</span> Manifesto</div>
+    </div>
+    <div>
+      <p class="manifesto-text">
+        FLOMI 浮米 不只是海上活動品牌。<br>
+        而是一個記錄台灣<em>海岸文化與生活方式</em>的平台。<br><br>
+        透過影像、故事、合作與策展，我們重新定義人們<span class="highlight">與海邊的關係</span>—— 因為海邊，其實是一種生活方式。
+      </p>
+      <div class="manifesto-foot">
+        <span>— FLOMI Studio, Taiwan</span>
+        <span>2024 / Ongoing</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALUES ===== -->
+<section class="values">
+  <div class="values-header">
+    <div>
+      <div class="section-label"><span class="section-num">02</span> Core Values</div>
+      <h2>Five tides<br>that <em>move</em> us.</h2>
+    </div>
+  </div>
+  <div class="values-grid">
+    <div class="value-card">
+      <div class="value-num">— 01</div>
+      <div class="value-en">Ocean<br>Lifestyle</div>
+      <div class="value-zh">海邊是一種生活方式，不只是景點。</div>
+    </div>
+    <div class="value-card">
+      <div class="value-num">— 02</div>
+      <div class="value-en">Local<br>Connection</div>
+      <div class="value-zh">串聯在地友善業主，建立緊密的海岸網絡。</div>
+    </div>
+    <div class="value-card">
+      <div class="value-num">— 03</div>
+      <div class="value-en">Visual<br>Storytelling</div>
+      <div class="value-zh">以影像建立情感，讓畫面成為記憶。</div>
+    </div>
+    <div class="value-card">
+      <div class="value-num">— 04</div>
+      <div class="value-en">Sustainable<br>Tourism</div>
+      <div class="value-zh">推動友善海岸文化，留下比沙更少的痕跡。</div>
+    </div>
+    <div class="value-card">
+      <div class="value-num">— 05</div>
+      <div class="value-en">Creative<br>Collaboration</div>
+      <div class="value-zh">創造跨品牌合作價值，讓海岸成為共創舞台。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SERVICES ===== -->
+<section class="services" id="studio">
+  <div class="services-header">
+    <div class="section-label"><span class="section-num">03</span> What we do</div>
+    <h2>Four currents,<br>one <em>coastline</em>.</h2>
+  </div>
+
+  <div class="service-row">
+    <div class="service-num">01</div>
+    <div>
+      <div class="service-title">Coastal<br>Partners.</div>
+      <div class="service-title-zh">海岸友善合作夥伴計畫</div>
+    </div>
+    <p class="service-desc">
+      串聯全台海岸友善場域——從海景民宿、咖啡廳、SUP 品牌到漁港小店，建立緊密的海岸生活圈。
+    </p>
+    <div class="service-tags">
+      <span class="service-tag">Brand Shoots</span>
+      <span class="service-tag">Drone</span>
+      <span class="service-tag">Reels</span>
+      <span class="service-tag">Co-branding</span>
+    </div>
+  </div>
+
+  <div class="service-row">
+    <div class="service-num">02</div>
+    <div>
+      <div class="service-title">Annual<br>Projects.</div>
+      <div class="service-title-zh">年度海岸企劃</div>
+    </div>
+    <p class="service-desc">
+      每一年，我們策劃一個關於海的故事——從夏日海岸、島嶼紀錄到海洋影像展。
+    </p>
+    <div class="service-tags">
+      <span class="service-tag">Summer Coast</span>
+      <span class="service-tag">Island Diary</span>
+      <span class="service-tag">Exhibitions</span>
+    </div>
+  </div>
+
+  <div class="service-row">
+    <div class="service-num">03</div>
+    <div>
+      <div class="service-title">Creative<br>Studio.</div>
+      <div class="service-title-zh">海洋影像工作室</div>
+    </div>
+    <p class="service-desc">
+      品牌形象片、海岸空拍、旅宿拍攝、政府觀光案——以紀錄片式的鏡頭為品牌寫信。
+    </p>
+    <div class="service-tags">
+      <span class="service-tag">Films</span>
+      <span class="service-tag">Aerial</span>
+      <span class="service-tag">Stays</span>
+      <span class="service-tag">Water Photo</span>
+    </div>
+  </div>
+
+  <div class="service-row">
+    <div class="service-num">04</div>
+    <div>
+      <div class="service-title">Travel<br>Journal.</div>
+      <div class="service-title-zh">海岸生活媒體</div>
+    </div>
+    <p class="service-desc">
+      海邊故事、季節旅行、小店人物、漁港文化——一份以海為主題的長期書寫。
+    </p>
+    <div class="service-tags">
+      <span class="service-tag">Editorial</span>
+      <span class="service-tag">Portraits</span>
+      <span class="service-tag">Islands</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== JOURNAL ===== -->
+<section class="journal" id="journal">
+  <div class="journal-header">
+    <div>
+      <div class="section-label"><span class="section-num">04</span> Travel Journal</div>
+      <h2>Notes from<br>the <em>shoreline</em>.</h2>
+    </div>
+    <p>
+      每一篇文章都是一次靠近海的方式。我們記錄漁港的清晨、旅宿的窗景、島嶼上的對話——讓海邊的生活從風景變成日常。
+    </p>
+  </div>
+
+  <div class="journal-grid">
+    <a class="article">
+      <div class="article-img">
+        <svg viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a6280"/>
+              <stop offset="60%" stop-color="#1a3a52"/>
+              <stop offset="100%" stop-color="#0a1419"/>
+            </linearGradient>
+            <linearGradient id="sun1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#c4633a" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#c4633a" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="500" fill="url(#g1)"/>
+          <rect width="400" height="500" fill="url(#sun1)"/>
+          <circle cx="320" cy="120" r="38" fill="#e8e2d4" opacity="0.85"/>
+          <g opacity="0.5" stroke="#e8e2d4" stroke-width="0.6" fill="none">
+            <path d="M0,320 Q100,310 200,320 T400,320"/>
+            <path d="M0,350 Q100,338 200,350 T400,350"/>
+            <path d="M0,380 Q100,368 200,380 T400,380"/>
+            <path d="M0,410 Q100,398 200,410 T400,410"/>
+            <path d="M0,440 Q100,428 200,440 T400,440"/>
+          </g>
+          <path d="M0,460 Q100,440 200,460 T400,460 L400,500 L0,500 Z" fill="#0a1419" opacity="0.6"/>
+        </svg>
+      </div>
+      <div class="article-meta">
+        <span>Issue 03 — Lanyu Island</span>
+        <span>15 min read</span>
+      </div>
+      <h3 class="article-title">在<em>蘭嶼</em>，學會把時間還給海。</h3>
+      <p class="article-excerpt">六天的島嶼紀錄，從拼板舟出海到日落前的潮間帶——這裡的人，比海還要安靜。</p>
+    </a>
+
+    <a class="article">
+      <div class="article-img">
+        <svg viewBox="0 0 400 533" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f1ece0"/>
+              <stop offset="55%" stop-color="#d4cdb8"/>
+              <stop offset="100%" stop-color="#565a5d"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="533" fill="url(#g2)"/>
+          <g opacity="0.5">
+            <ellipse cx="80" cy="380" rx="60" ry="14" fill="#565a5d"/>
+            <ellipse cx="180" cy="395" rx="80" ry="16" fill="#565a5d"/>
+            <ellipse cx="320" cy="375" rx="50" ry="12" fill="#565a5d"/>
+            <ellipse cx="260" cy="420" rx="100" ry="20" fill="#0a1419" opacity="0.6"/>
+          </g>
+          <g opacity="0.7">
+            <rect x="50" y="200" width="3" height="220" fill="#0a1419"/>
+            <rect x="51.5" y="190" width="40" height="30" fill="#c4633a"/>
+            <rect x="200" y="220" width="3" height="200" fill="#0a1419"/>
+            <rect x="201.5" y="210" width="50" height="35" fill="#e8e2d4"/>
+          </g>
+          <line x1="0" y1="180" x2="400" y2="180" stroke="#1a3a52" stroke-width="0.4" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="article-meta">
+        <span>Issue 02 — Yilan</span>
+        <span>8 min read</span>
+      </div>
+      <h3 class="article-title">漁港咖啡：在<em>南方澳</em>，等一場潮汐。</h3>
+      <p class="article-excerpt">早上四點的拍賣聲，下午兩點的咖啡香——一間咖啡廳如何成為漁港的另一種節奏。</p>
+    </a>
+
+    <a class="article">
+      <div class="article-img">
+        <svg viewBox="0 0 400 533" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0e1d28"/>
+              <stop offset="100%" stop-color="#2d5878"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="533" fill="url(#g3)"/>
+          <g opacity="0.85" fill="#e8e2d4">
+            <circle cx="80" cy="80" r="1"/>
+            <circle cx="160" cy="50" r="0.8"/>
+            <circle cx="240" cy="100" r="1.2"/>
+            <circle cx="320" cy="60" r="0.9"/>
+            <circle cx="130" cy="120" r="0.7"/>
+            <circle cx="290" cy="140" r="0.8"/>
+            <circle cx="60" cy="180" r="1"/>
+            <circle cx="350" cy="200" r="0.6"/>
+          </g>
+          <ellipse cx="200" cy="380" rx="200" ry="60" fill="#1a3a52" opacity="0.7"/>
+          <g opacity="0.6" stroke="#e8e2d4" stroke-width="0.5" fill="none">
+            <path d="M0,400 Q100,395 200,400 T400,400"/>
+            <path d="M0,420 Q100,415 200,420 T400,420"/>
+            <path d="M0,440 Q100,435 200,440 T400,440"/>
+            <path d="M0,460 Q100,455 200,460 T400,460"/>
+          </g>
+          <path d="M0,360 Q150,340 280,360 L280,380 L0,380 Z" fill="#0a1419" opacity="0.8"/>
+        </svg>
+      </div>
+      <div class="article-meta">
+        <span>Issue 01 — Hualien</span>
+        <span>12 min read</span>
+      </div>
+      <h3 class="article-title">夜潛<em>花蓮</em>：當光熄滅，海才開始說話。</h3>
+      <p class="article-excerpt">一支水下手電筒，一片寂靜——關於黑夜裡的海與我們最初的敬畏。</p>
+    </a>
+  </div>
+</section>
+
+<!-- ===== PARTNERS ===== -->
+<section class="partners" id="partners">
+  <div class="partners-inner">
+    <div class="section-label"><span class="section-num">05</span> Coastal Partners</div>
+    <h2>A network of<br><em>ocean-minded</em> places.</h2>
+  </div>
+
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>海景旅宿</span><span>海邊咖啡廳</span><span>小島旅宿</span><span>SUP 品牌</span><span>自由潛水店</span><span>漁港小店</span><span>海岸餐廳</span><span>地方選物店</span>
+      <span>海景旅宿</span><span>海邊咖啡廳</span><span>小島旅宿</span><span>SUP 品牌</span><span>自由潛水店</span><span>漁港小店</span><span>海岸餐廳</span><span>地方選物店</span>
+    </div>
+  </div>
+
+  <div class="partners-inner" style="padding-top: 80px; padding-bottom: 0;">
+    <div class="partners-categories">
+      <div class="partner-cat">
+        <div class="partner-cat-num">— 01</div>
+        <div class="partner-cat-name">Stays</div>
+        <div class="partner-cat-zh">海景旅宿 · 小島旅宿</div>
+      </div>
+      <div class="partner-cat">
+        <div class="partner-cat-num">— 02</div>
+        <div class="partner-cat-name">Coffee &amp; Eats</div>
+        <div class="partner-cat-zh">海邊咖啡廳 · 海岸餐廳</div>
+      </div>
+      <div class="partner-cat">
+        <div class="partner-cat-num">— 03</div>
+        <div class="partner-cat-name">Water Brands</div>
+        <div class="partner-cat-zh">SUP · 自由潛水店</div>
+      </div>
+      <div class="partner-cat">
+        <div class="partner-cat-num">— 04</div>
+        <div class="partner-cat-name">Local Makers</div>
+        <div class="partner-cat-zh">漁港小店 · 地方選物店</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stats-label">— First-year goals · 第一階段發展目標 (12 個月) —</div>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-num"><em>20</em><sup>+</sup></div>
+        <div class="stat-label">合作品牌<br>Partner Brands</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><em>50</em><sup>+</sup></div>
+        <div class="stat-label">海岸內容文章<br>Editorial Articles</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><em>100</em><sup>+</sup></div>
+        <div class="stat-label">短影音作品<br>Reels Produced</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><em>15</em><sup>+</sup></div>
+        <div class="stat-label">品牌與攝影合作案<br>Commissioned Works</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ROADMAP ===== -->
+<section class="roadmap" id="projects">
+  <div class="roadmap-inner">
+    <div class="roadmap-header">
+      <div>
+        <div class="section-label"><span class="section-num">06</span> Roadmap</div>
+        <h2>Four phases,<br>one <em>horizon</em>.</h2>
+      </div>
+    </div>
+
+    <div class="phases">
+      <div class="phases-grid">
+        <div class="phase">
+          <div class="phase-tag">— PHASE 01 · NOW</div>
+          <div class="phase-num">i.</div>
+          <div class="phase-title">海岸品牌媒體建立</div>
+          <div class="phase-desc">奠定影像語言、發行第一期 Journal、建立 Studio 服務體系。</div>
+        </div>
+        <div class="phase">
+          <div class="phase-tag">— PHASE 02</div>
+          <div class="phase-num">ii.</div>
+          <div class="phase-title">全台海岸合作串聯</div>
+          <div class="phase-desc">從北到南、從本島到離島，建立全島友善合作網絡。</div>
+        </div>
+        <div class="phase">
+          <div class="phase-tag">— PHASE 03</div>
+          <div class="phase-num">iii.</div>
+          <div class="phase-title">地方創生與政府合作</div>
+          <div class="phase-desc">承接觀光案、推動海岸文化教育與長期駐地企劃。</div>
+        </div>
+        <div class="phase">
+          <div class="phase-tag">— PHASE 04</div>
+          <div class="phase-num">iv.</div>
+          <div class="phase-title">國際海岸文化品牌</div>
+          <div class="phase-desc">將台灣海岸生活輸出國際，成為亞洲海岸代表品牌。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta" id="contact">
+  <div class="cta-inner">
+    <div class="section-label"><span class="section-num">07</span> Let's collaborate</div>
+    <h2>Build the coast,<br><span class="non-italic">together.</span></h2>
+    <p>無論你是海景旅宿、地方品牌、政府單位或同樣熱愛海洋的創作者—— FLOMI 期待和你一起書寫台灣海岸的下一個篇章。</p>
+    <a class="cta-btn"><span>Become a Partner</span></a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo"><span>FL</span>OMI<span>.</span></div>
+      <p>Follow me, follow the ocean. <br>台灣海岸生活風格品牌平台。</p>
+    </div>
+    <div class="footer-col">
+      <h4>Platform</h4>
+      <ul>
+        <li><a>Partners</a></li>
+        <li><a>Projects</a></li>
+        <li><a>Creative Studio</a></li>
+        <li><a>Journal</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <ul>
+        <li><a>hello@flomi.studio</a></li>
+        <li><a>partners@flomi.studio</a></li>
+        <li><a>+886 — Taipei</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <ul>
+        <li><a>Instagram</a></li>
+        <li><a>Vimeo</a></li>
+        <li><a>Newsletter</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 FLOMI Studio · All rights reserved</span>
+    <span>Made on the Taiwanese coast 🌊</span>
+  </div>
+</footer>
+
+</body>
+</html>
